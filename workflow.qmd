@@ -18,23 +18,24 @@ editor_options:
   chunk_output_type: console
 ---
 
-## Quarto
+## 
 
-Quarto allows you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+## Libraries
+```{r, message=FALSE, warning=FALSE}
+library(here)
+library(tidyverse)
+library(rstan)
+rstan_options (auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
 
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
+library(cmdstanr)
+check_cmdstan_toolchain(fix = TRUE, quiet = TRUE)
+register_knitr_engine()
 ```
 
-You can add options to executable code like this
-
-```{r}
-#| echo: false
-2 * 2
+## Custom Functions
+```{r message=FALSE, warning=FALSE}
+source(here("./R/utilities.R"))
+source_dir(here("./R"))
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).

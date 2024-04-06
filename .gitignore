@@ -54,3 +54,8 @@ rsconnect/
 
 # secrets
 /secrets.yaml
+
+# local
+/data/model_out
+
+
