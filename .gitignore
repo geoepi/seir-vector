@@ -48,7 +48,9 @@ po/*~
 # RStudio Connect folder
 rsconnect/
 
+# quarto
 /.quarto/
+*.log
 
 # secrets
 /secrets.yaml

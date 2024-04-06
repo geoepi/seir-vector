@@ -2,12 +2,17 @@
 title: "Workflow"
 format:
   html: 
-    code-link: true
-    code-fold: true
-    code-tools: 
-      source: false
-      toggle: true
-  pdf: default
+    df-print: kable
+    code-fold: show
+    code-summary: "Hide code"
+    code-overflow: wrap
+    toc-title: Page Contents
+    toc: true
+    toc-depth: 2
+    toc-location: right
+    number-sections: false
+    html-math-method: katex
+    smooth-scroll: true
 editor: visual
 editor_options: 
   chunk_output_type: console
@@ -15,7 +20,7 @@ editor_options:
 
 ## Quarto
 
-Quarto allows you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+Quarto allows you to weave together content and  into a finished document. To learn more about Quarto see <https://quarto.org>.
 
 ## Running Code
 

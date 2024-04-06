@@ -2,13 +2,18 @@
 title: "Workflow"
 format:
   html: 
-    code-link: true
-    code-fold: true
-    code-tools: 
-      source: false
-      toggle: true
-  pdf: default
-editor: visual
+    df-print: kable
+    code-fold: show
+    code-summary: "Hide code"
+    code-overflow: wrap
+    toc-title: Page Contents
+    toc: true
+    toc-depth: 2
+    toc-location: right
+    number-sections: false
+    html-math-method: katex
+    smooth-scroll: true
+editor: source
 editor_options: 
   chunk_output_type: console
 ---
