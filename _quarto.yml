@@ -1,0 +1,25 @@
+project:
+  type: website
+  output-dir: docs
+  
+website:
+  title: "SEIR-vector Model"
+  navbar:
+    left:
+      - href: index.qmd
+        text: Vesicular stomatitis Compartmental Model 
+      - results.qmd
+    tools:
+      - icon: github
+        href: https://github.com/geoepi/seir-vector
+  page-footer:
+    right: "Built with [Quarto](https://quarto.org/)"
+
+format:
+  html:
+    theme: lux
+    toc: true
+  pdf: default
+
+editor: source
+
