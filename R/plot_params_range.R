@@ -6,8 +6,8 @@ plot_params_range <- function(stanmodel_1, stanmodel_2) {
     param_df <- as.data.frame(extract(stanmodel, pars = c("duration", "incub_h", "incub_v")))
     
     # New names and order
-    new_names <- c(incub_v = "Incubation (V)", incub_h = "Incubation (H)", duration = "Duration")
-    ordered_names <- rev(c("Incubation (V)", "Incubation (H)", "Duration"))
+    new_names <- c(incub_v = "Incubation (V)", incub_h = "Incubation (H)", duration = "Recovery")
+    ordered_names <- rev(c("Incubation (V)", "Incubation (H)", "Recovery"))
     
     # Calculate credible intervals
     cred_intervals_list <- lapply(names(new_names), function(parameter_name) {
@@ -23,7 +23,7 @@ plot_params_range <- function(stanmodel_1, stanmodel_2) {
         upper_90 = quantiles['95%'],
         upper_95 = quantiles['99%'],
         factor_parameter = factor(new_names[parameter_name], levels = ordered_names),
-        model = model_name
+        model = factor(model_name, levels = c('2014', '2015')) 
       )
     })
     
@@ -36,31 +36,32 @@ plot_params_range <- function(stanmodel_1, stanmodel_2) {
   
   # Combine models
   cred_intervals_df <- rbind(cred_intervals_df_1, cred_intervals_df_2)
-  
+    
   # Plotting
   dodge_width <- 0.75
   
   cred_intervals_df$parameter <- ordered(factor(cred_intervals_df$parameter), ordered_names)
+  cred_intervals_df$model <- ordered(factor(cred_intervals_df$model), c('2015', '2014'))
   
   p <- ggplot(data = cred_intervals_df, aes(x = factor_parameter, y = median, color = model)) +
-    geom_linerange(aes(ymin = lower_95, ymax = upper_95), size = 1.5, alpha=0.5,
+    geom_linerange(aes(ymin = lower_95, ymax = upper_95), size = 2.5, alpha=0.5,
                    position = position_dodge(width = dodge_width)) +
-    geom_linerange(aes(ymin = lower_90, ymax = upper_90), size = 2.5, alpha=0.5,
+    geom_linerange(aes(ymin = lower_90, ymax = upper_90), size = 3.5, alpha=0.5,
                    position = position_dodge(width = dodge_width)) +
-    geom_linerange(aes(ymin = lower_50, ymax = upper_50), size = 3.5, alpha=0.5,
+    geom_linerange(aes(ymin = lower_50, ymax = upper_50), size = 4.5, alpha=0.5,
                    position = position_dodge(width = dodge_width)) +
-    geom_point(size = 5, aes(color = model), 
+    geom_point(size = 6, aes(color = model), 
                position = position_dodge(width = dodge_width)) + 
     # scale_y_continuous(breaks = seq(0, 20, by = 2), limits = c(0, 20)) +
-    scale_color_manual(values = c('2014' = 'dodgerblue', '2015' = 'darkorange')) +
+    scale_color_manual(values = c('2014' = 'steelblue', '2015' = 'darkorange')) +
     labs(title = " ",
          color = "Year",
          x = "",
-         y = "Time (Days)") +
+         y = "Duration (Days)") +
     theme_minimal() +
     coord_flip() +
     facet_wrap(~rev(factor_parameter), ncol = 1, scales="free") +
-    theme(plot.margin = unit(c(2,0.5,2,0.5),"cm"),
+    theme(plot.margin = unit(c(1,0.75,1,0.75),"cm"),
           legend.direction = "horizontal",
           legend.position="bottom",
           strip.text = element_blank(), #element_text(size=18, face="bold"),

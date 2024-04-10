@@ -50,7 +50,6 @@ rsconnect/
 
 # quarto
 /.quarto/
-*.log
 
 # secrets
 /secrets.yaml
