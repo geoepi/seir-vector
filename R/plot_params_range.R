@@ -7,6 +7,7 @@ plot_params_range <- function(stanmodel_1, stanmodel_2) {
     
     # New names and order
     new_names <- c(incub_v = "Incubation (V)", incub_h = "Incubation (H)", duration = "Recovery")
+    
     ordered_names <- rev(c("Incubation (V)", "Incubation (H)", "Recovery"))
     
     # Calculate credible intervals
