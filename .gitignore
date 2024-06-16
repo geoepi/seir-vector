@@ -52,10 +52,10 @@ rsconnect/
 /secrets.yaml
 
 # local
-/data/model_out
+data/model_out
 
 # temp hide
-/R
-/inst
+R
+inst
 
 
