@@ -7,12 +7,10 @@ website:
   navbar:
     left:
       - href: overview.qmd
-        text: Overview 
-      - workflow.qmd
-      - results.qmd
+        text: Overview
     tools:
       - icon: github
-        href: https://github.com/geoepi/
+        href: https://github.com/geoepi/seir-vector
   page-footer:
     right: "Built with [Quarto](https://quarto.org/)"
 
