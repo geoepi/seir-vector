@@ -57,8 +57,45 @@ Additional supporting information and documents available on the Open Science Fr
 The menu at right can be used to navigate through the workflow.    
 
 
+## Needed Libraries  
+```{r warning=FALSE, message=FALSE}
+library(here) # to manage directories
+library(tidyverse) # data wrangling
+library(ggdist) # visualizations
+library(rstan) # interface with Stan from R
+rstan_options(auto_write = TRUE) # options
+options(mc.cores = parallel::detectCores())
 
-## Formula
+library(cmdstanr)
+check_cmdstan_toolchain(fix = TRUE, quiet = TRUE)
+register_knitr_engine()
+
+# custom functions
+source(here("./R/utilities.R"))
+source_dir("./R")
+```
+
+## Observed Incidence  
+Observed incidence data is loaded and visualized.
+
+```{r}
+truth_df <- readRDS(here("assets/vsv_ind_truth.rds")) %>%
+  filter(year == 2014)
+
+str(truth_df)
+```
+
+
+```{r fig.width=8, fig.height=6}
+#| label: fig-incidence
+#| fig-cap: "Observed VS incidence 2014."
+#| 
+plot_incidence(truth_df)
+```
+
+## Formula 
+Model Parameters:  
+
 $$\begin{align} 
     \lambda_h &= \upsilon_h \cdot \beta_h \cdot \frac{I_v}{N_v} \\ 
     \lambda_v &= \upsilon_v \cdot \beta_v \cdot \frac{I_h}{N_h} \\ 
@@ -70,7 +107,87 @@ $$\begin{align}
     \frac{dE_v}{dt} &= \lambda_v \cdot S_v - (\sigma_v + \mu_v) \cdot E_v \\ 
     \frac{dI_v}{dt} &=  \sigma_v \cdot E_v \cdot \rho_v - \mu_v \cdot I_v \\ \nonumber
 \end{align}$$  
+
+## Exploratory Model  
+Before coding a Stan model, exploring parameters through construction of a relatively simple Ordinary Differential Equations (ODE) model using the **deSolve** package.
+
+### Parameter Values  
+```{r}
+initial_parameters <- 
+  c(
+    beta_h = 0.95,
+    gamma_h = 0.10,
+    sigma_h = 0.25,
+    sigma_v = 0.4,
+    rho_h = 0.3,
+    rho_v = 0.85,
+    beta_v =0.85,
+    mu_v = 0.1,
+    upsilon_h = 0.6,
+    upsilon_v = 0.35,
+    kappa = 0.30
+  )
+
+```
+
+### Initial Conditions
+```{r}
+N_h <- sum(truth_df$count) + sum(truth_df$susc)
+Eh <- 0
+Ih <- 1
+N_v <- 300*N_h
+Ev <- 0
+Iv <- 1
+
+initial_conditions <- 
+  c(
+    Eh = Eh,
+    Ih = Ih,
+    Sh = N_h - Eh - Ih,
+    Rh = 0,
+    Ev = Ev,
+    Iv = Iv,
+    Sv = N_v - Iv - Ev
+  )
+
+```
   
+### ODE Function   
+```{r}
+seirsei_ode <- function(t, state, parameters) {
+  with(as.list(c(state, parameters)), {
+    
+    lambda_h = upsilon_h * beta_h * Iv / N_v
+    lambda_v = upsilon_v * beta_v * Ih / N_h
+    
+    dSh = -lambda_h * Sh
+    dEh = lambda_h * Sh - sigma_h * Eh
+    dIh = sigma_h * Eh*rho_h - gamma_h * Ih
+    dRh = gamma_h * Ih
+    dSv = mu_v * N_v - lambda_v * Sv - mu_v * Sv
+    dEv = lambda_v * Sv - (sigma_v + mu_v) * Ev
+    dIv = sigma_v * Ev*rho_v - mu_v * Iv
+    
+    return(list(c(dSh, dEh, dIh, dRh, dSv, dEv, dIv)))
+  })
+}
+
+```
+
+### Run ODE Model
+```{r eval=FALSE}
+out <- as.data.frame(
+  ode(y = initial_conditions, times = times, func = seirsei_ode, parms = initial_parameters)
+)
+
+```
+
+### Plot Results
+
+## Stan Model
+  
+### NegBinomial Sampling 
+Sampling from NegBinonial...
 $$\begin{align} \nonumber
     \text{Y}_{t}|\theta &\sim \text{NegBinomial}(\text{Y}|\Delta\text{I}_{t}\kappa, \phi) \\ \nonumber
     \theta &= \{\upsilon_h,\upsilon_v, \beta_h, \beta_v, \sigma_h, \sigma_v, \gamma_h, \mu, \rho, \kappa\} \\ \nonumber 
@@ -89,7 +206,7 @@ $$\begin{align} \nonumber
 \end{align}$$  
 
 
-## Stan Code
+### Stan Code
 ```stan
 functions {
   real[] seirsei(real t, real[] y, real[] theta, 
@@ -211,4 +328,7 @@ generated quantities {
   }
 }
 ```
+
+
+## Prior Predictive
    

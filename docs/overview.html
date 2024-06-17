@@ -177,8 +177,12 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     <h2 id="toc-title">Page Contents</h2>
    
   <ul class="collapse">
-  <li><a href="#formula" id="toc-formula" class="nav-link active" data-scroll-target="#formula">Formula</a></li>
-  <li><a href="#stan-code" id="toc-stan-code" class="nav-link" data-scroll-target="#stan-code">Stan Code</a></li>
+  <li><a href="#needed-libraries" id="toc-needed-libraries" class="nav-link active" data-scroll-target="#needed-libraries">Needed Libraries</a></li>
+  <li><a href="#observed-incidence" id="toc-observed-incidence" class="nav-link" data-scroll-target="#observed-incidence">Observed Incidence</a></li>
+  <li><a href="#formula" id="toc-formula" class="nav-link" data-scroll-target="#formula">Formula</a></li>
+  <li><a href="#exploratory-model" id="toc-exploratory-model" class="nav-link" data-scroll-target="#exploratory-model">Exploratory Model</a></li>
+  <li><a href="#stan-model" id="toc-stan-model" class="nav-link" data-scroll-target="#stan-model">Stan Model</a></li>
+  <li><a href="#prior-predictive" id="toc-prior-predictive" class="nav-link" data-scroll-target="#prior-predictive">Prior Predictive</a></li>
   </ul>
 </nav>
     </div>
@@ -239,8 +243,66 @@ Humphreys, Pelzel-McCluskey, Shults, Velazquez Salinas, Bertram, McGregor, Cohns
 <h3 class="anchored" data-anchor-id="navigation">Navigation</h3>
 <p>The menu at right can be used to navigate through the workflow.</p>
 </section>
+<section id="needed-libraries" class="level2">
+<h2 class="anchored" data-anchor-id="needed-libraries">Needed Libraries</h2>
+<div class="cell">
+<details open="">
+<summary>Hide code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(here) <span class="co"># to manage directories</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse) <span class="co"># data wrangling</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggdist) <span class="co"># visualizations</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rstan) <span class="co"># interface with Stan from R</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">rstan_options</span>(<span class="at">auto_write =</span> <span class="cn">TRUE</span>) <span class="co"># options</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">options</span>(<span class="at">mc.cores =</span> parallel<span class="sc">::</span><span class="fu">detectCores</span>())</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(cmdstanr)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">check_cmdstan_toolchain</span>(<span class="at">fix =</span> <span class="cn">TRUE</span>, <span class="at">quiet =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">register_knitr_engine</span>()</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="co"># custom functions</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span>(<span class="fu">here</span>(<span class="st">"./R/utilities.R"</span>))</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">source_dir</span>(<span class="st">"./R"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="observed-incidence" class="level2">
+<h2 class="anchored" data-anchor-id="observed-incidence">Observed Incidence</h2>
+<p>Observed incidence data is loaded and visualized.</p>
+<div class="cell">
+<details open="">
+<summary>Hide code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>truth_df <span class="ot">&lt;-</span> <span class="fu">readRDS</span>(<span class="fu">here</span>(<span class="st">"assets/vsv_ind_truth.rds"</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(year <span class="sc">==</span> <span class="dv">2014</span>)</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">str</span>(truth_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>'data.frame':   117 obs. of  5 variables:
+ $ date : Date, format: "2014-05-18" "2014-05-29" ...
+ $ count: int  4 1 1 1 2 1 1 2 4 1 ...
+ $ susc : int  65 3 3 5 4 1 11 79 7 6 ...
+ $ year : num  2014 2014 2014 2014 2014 ...
+ $ doy  : num  138 149 150 158 159 163 166 174 184 188 ...</code></pre>
+</div>
+</div>
+<div class="cell">
+<details open="">
+<summary>Hide code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot_incidence</span>(truth_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<div id="fig-incidence" class="quarto-figure quarto-figure-center anchored">
+<figure class="figure">
+<p><img src="overview_files/figure-html/fig-incidence-1.png" class="img-fluid figure-img" width="768"></p>
+<p></p><figcaption class="figure-caption">Figure&nbsp;1: Observed VS incidence 2014.</figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
 <section id="formula" class="level2">
 <h2 class="anchored" data-anchor-id="formula">Formula</h2>
+<p>Model Parameters:</p>
 <p><span class="math display">\begin{align}
     \lambda_h &amp;= \upsilon_h \cdot \beta_h \cdot \frac{I_v}{N_v} \\
     \lambda_v &amp;= \upsilon_v \cdot \beta_v \cdot \frac{I_h}{N_h} \\
@@ -252,7 +314,102 @@ Humphreys, Pelzel-McCluskey, Shults, Velazquez Salinas, Bertram, McGregor, Cohns
     \frac{dE_v}{dt} &amp;= \lambda_v \cdot S_v - (\sigma_v + \mu_v) \cdot E_v \\
     \frac{dI_v}{dt} &amp;=  \sigma_v \cdot E_v \cdot \rho_v - \mu_v \cdot I_v \\ \nonumber
 \end{align}</span></p>
-<p><span class="math display">\begin{align} \nonumber
+</section>
+<section id="exploratory-model" class="level2">
+<h2 class="anchored" data-anchor-id="exploratory-model">Exploratory Model</h2>
+<p>Before coding a Stan model, exploring parameters through construction of a relatively simple Ordinary Differential Equations (ODE) model using the <strong>deSolve</strong> package.</p>
+<section id="parameter-values" class="level3">
+<h3 class="anchored" data-anchor-id="parameter-values">Parameter Values</h3>
+<div class="cell">
+<details open="">
+<summary>Hide code</summary>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>initial_parameters <span class="ot">&lt;-</span> </span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">beta_h =</span> <span class="fl">0.95</span>,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">gamma_h =</span> <span class="fl">0.10</span>,</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">sigma_h =</span> <span class="fl">0.25</span>,</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">sigma_v =</span> <span class="fl">0.4</span>,</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">rho_h =</span> <span class="fl">0.3</span>,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">rho_v =</span> <span class="fl">0.85</span>,</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">beta_v =</span><span class="fl">0.85</span>,</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">mu_v =</span> <span class="fl">0.1</span>,</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">upsilon_h =</span> <span class="fl">0.6</span>,</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">upsilon_v =</span> <span class="fl">0.35</span>,</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">kappa =</span> <span class="fl">0.30</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="initial-conditions" class="level3">
+<h3 class="anchored" data-anchor-id="initial-conditions">Initial Conditions</h3>
+<div class="cell">
+<details open="">
+<summary>Hide code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>N_h <span class="ot">&lt;-</span> <span class="fu">sum</span>(truth_df<span class="sc">$</span>count) <span class="sc">+</span> <span class="fu">sum</span>(truth_df<span class="sc">$</span>susc)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>Eh <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>Ih <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>N_v <span class="ot">&lt;-</span> <span class="dv">300</span><span class="sc">*</span>N_h</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>Ev <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>Iv <span class="ot">&lt;-</span> <span class="dv">1</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>initial_conditions <span class="ot">&lt;-</span> </span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">c</span>(</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">Eh =</span> Eh,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">Ih =</span> Ih,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sh =</span> N_h <span class="sc">-</span> Eh <span class="sc">-</span> Ih,</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">Rh =</span> <span class="dv">0</span>,</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">Ev =</span> Ev,</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">Iv =</span> Iv,</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">Sv =</span> N_v <span class="sc">-</span> Iv <span class="sc">-</span> Ev</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="ode-function" class="level3">
+<h3 class="anchored" data-anchor-id="ode-function">ODE Function</h3>
+<div class="cell">
+<details open="">
+<summary>Hide code</summary>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>seirsei_ode <span class="ot">&lt;-</span> <span class="cf">function</span>(t, state, parameters) {</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">with</span>(<span class="fu">as.list</span>(<span class="fu">c</span>(state, parameters)), {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    lambda_h <span class="ot">=</span> upsilon_h <span class="sc">*</span> beta_h <span class="sc">*</span> Iv <span class="sc">/</span> N_v</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    lambda_v <span class="ot">=</span> upsilon_v <span class="sc">*</span> beta_v <span class="sc">*</span> Ih <span class="sc">/</span> N_h</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    dSh <span class="ot">=</span> <span class="sc">-</span>lambda_h <span class="sc">*</span> Sh</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    dEh <span class="ot">=</span> lambda_h <span class="sc">*</span> Sh <span class="sc">-</span> sigma_h <span class="sc">*</span> Eh</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>    dIh <span class="ot">=</span> sigma_h <span class="sc">*</span> Eh<span class="sc">*</span>rho_h <span class="sc">-</span> gamma_h <span class="sc">*</span> Ih</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>    dRh <span class="ot">=</span> gamma_h <span class="sc">*</span> Ih</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    dSv <span class="ot">=</span> mu_v <span class="sc">*</span> N_v <span class="sc">-</span> lambda_v <span class="sc">*</span> Sv <span class="sc">-</span> mu_v <span class="sc">*</span> Sv</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    dEv <span class="ot">=</span> lambda_v <span class="sc">*</span> Sv <span class="sc">-</span> (sigma_v <span class="sc">+</span> mu_v) <span class="sc">*</span> Ev</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    dIv <span class="ot">=</span> sigma_v <span class="sc">*</span> Ev<span class="sc">*</span>rho_v <span class="sc">-</span> mu_v <span class="sc">*</span> Iv</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="fu">list</span>(<span class="fu">c</span>(dSh, dEh, dIh, dRh, dSv, dEv, dIv)))</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="run-ode-model" class="level3">
+<h3 class="anchored" data-anchor-id="run-ode-model">Run ODE Model</h3>
+<div class="cell">
+<details open="">
+<summary>Hide code</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>out <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ode</span>(<span class="at">y =</span> initial_conditions, <span class="at">times =</span> times, <span class="at">func =</span> seirsei_ode, <span class="at">parms =</span> initial_parameters)</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="plot-results" class="level3">
+<h3 class="anchored" data-anchor-id="plot-results">Plot Results</h3>
+</section>
+</section>
+<section id="stan-model" class="level2">
+<h2 class="anchored" data-anchor-id="stan-model">Stan Model</h2>
+<section id="negbinomial-sampling" class="level3">
+<h3 class="anchored" data-anchor-id="negbinomial-sampling">NegBinomial Sampling</h3>
+<p>Sampling from NegBinonial… <span class="math display">\begin{align} \nonumber
     \text{Y}_{t}|\theta &amp;\sim \text{NegBinomial}(\text{Y}|\Delta\text{I}_{t}\kappa, \phi) \\ \nonumber
     \theta &amp;= \{\upsilon_h,\upsilon_v, \beta_h, \beta_v, \sigma_h, \sigma_v, \gamma_h, \mu, \rho, \kappa\} \\ \nonumber
     \upsilon_h &amp;\sim \text{Lognormal}(log(0.25), 0.1) \\ \nonumber
@@ -269,127 +426,131 @@ Humphreys, Pelzel-McCluskey, Shults, Velazquez Salinas, Bertram, McGregor, Cohns
     {1}/{\phi} &amp;\sim \text{Exponential}(2) \\ \nonumber
 \end{align}</span></p>
 </section>
-<section id="stan-code" class="level2">
-<h2 class="anchored" data-anchor-id="stan-code">Stan Code</h2>
-<div class="sourceCode" id="cb1"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">functions</span> {</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>[] seirsei(<span class="dt">real</span> t, <span class="dt">real</span>[] y, <span class="dt">real</span>[] theta, </span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>             <span class="dt">real</span>[] x_r, <span class="dt">int</span>[] x_i) {</span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> N_h = x_i[<span class="dv">1</span>];</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>     </span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> beta_h = theta[<span class="dv">1</span>];</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> gamma_h = theta[<span class="dv">2</span>];</span>
-<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> sigma_h = theta[<span class="dv">3</span>];</span>
-<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> sigma_v = theta[<span class="dv">4</span>];</span>
-<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> rho_h = theta[<span class="dv">5</span>];</span>
-<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> rho_v = theta[<span class="dv">6</span>];</span>
-<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> beta_v = theta[<span class="dv">7</span>];</span>
-<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> mu_v = theta[<span class="dv">8</span>];</span>
-<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> upsilon_h = theta[<span class="dv">9</span>];</span>
-<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> upsilon_v = theta[<span class="dv">10</span>];</span>
-<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> i_0 = theta[<span class="dv">11</span>];</span>
-<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> e_0 = theta[<span class="dv">12</span>];</span>
-<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> ev_0 = theta[<span class="dv">13</span>];</span>
-<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> iv_0 = theta[<span class="dv">14</span>];</span>
-<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> N_v = theta[<span class="dv">15</span>];</span>
-<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> init[<span class="dv">7</span>] = {N_h - i_0 - e_0, e_0, i_0, <span class="dv">0</span>, N_v - iv_0 - ev_0, ev_0, iv_0}; </span>
-<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Sh = y[<span class="dv">1</span>] + init[<span class="dv">1</span>];</span>
-<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Eh = y[<span class="dv">2</span>] + init[<span class="dv">2</span>];</span>
-<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Ih = y[<span class="dv">3</span>] + init[<span class="dv">3</span>];</span>
-<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Rh = y[<span class="dv">4</span>] + init[<span class="dv">4</span>];</span>
-<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Sv = y[<span class="dv">5</span>] + init[<span class="dv">5</span>];</span>
-<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Ev = y[<span class="dv">6</span>] + init[<span class="dv">6</span>];</span>
-<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Iv = y[<span class="dv">7</span>] + init[<span class="dv">7</span>];</span>
-<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> lambda_h = upsilon_h * beta_h * Iv / N_v;</span>
-<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> lambda_v = upsilon_v * beta_v * Ih / N_h;</span>
-<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dS_dt = -lambda_h * Sh;</span>
-<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dE_dt =  lambda_h * Sh - sigma_h * Eh;</span>
-<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dI_dt = sigma_h * Eh*rho_h - gamma_h * Ih;</span>
-<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dR_dt =  gamma_h * Ih;</span>
-<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>      </span>
-<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dSv_dt = mu_v*N_v - lambda_v*Sv - mu_v*Sv;</span>
-<span id="cb1-41"><a href="#cb1-41" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dEv_dt = lambda_v*Sv - (sigma_v + mu_v)*Ev;</span>
-<span id="cb1-42"><a href="#cb1-42" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dIv_dt =  sigma_v * Ev*rho_v - mu_v*Iv;</span>
-<span id="cb1-43"><a href="#cb1-43" aria-hidden="true" tabindex="-1"></a>     </span>
-<span id="cb1-44"><a href="#cb1-44" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> {dS_dt, dE_dt, dI_dt, dR_dt, dSv_dt, dEv_dt, dIv_dt};</span>
-<span id="cb1-45"><a href="#cb1-45" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb1-46"><a href="#cb1-46" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-47"><a href="#cb1-47" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
-<span id="cb1-48"><a href="#cb1-48" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; n_days;</span>
-<span id="cb1-49"><a href="#cb1-49" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> t0;</span>
-<span id="cb1-50"><a href="#cb1-50" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> ts[n_days];</span>
-<span id="cb1-51"><a href="#cb1-51" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> N_h;</span>
-<span id="cb1-52"><a href="#cb1-52" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> N_v;</span>
-<span id="cb1-53"><a href="#cb1-53" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> cases[n_days];</span>
-<span id="cb1-54"><a href="#cb1-54" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-55"><a href="#cb1-55" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span> {</span>
-<span id="cb1-56"><a href="#cb1-56" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> x_r[<span class="dv">0</span>];</span>
-<span id="cb1-57"><a href="#cb1-57" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> x_i[<span class="dv">1</span>] = { N_h };</span>
-<span id="cb1-58"><a href="#cb1-58" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-59"><a href="#cb1-59" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
-<span id="cb1-60"><a href="#cb1-60" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; beta_h;</span>
-<span id="cb1-61"><a href="#cb1-61" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; gamma_h;</span>
-<span id="cb1-62"><a href="#cb1-62" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma_h;</span>
-<span id="cb1-63"><a href="#cb1-63" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma_v;</span>
-<span id="cb1-64"><a href="#cb1-64" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; rho_h;</span>
-<span id="cb1-65"><a href="#cb1-65" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; rho_v;</span>
-<span id="cb1-66"><a href="#cb1-66" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; beta_v;</span>
-<span id="cb1-67"><a href="#cb1-67" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; mu_v;</span>
-<span id="cb1-68"><a href="#cb1-68" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; upsilon_h;</span>
-<span id="cb1-69"><a href="#cb1-69" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; upsilon_v;</span>
-<span id="cb1-70"><a href="#cb1-70" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; phi_inv;</span>
-<span id="cb1-71"><a href="#cb1-71" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; kappa;</span>
-<span id="cb1-72"><a href="#cb1-72" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; i_0; </span>
-<span id="cb1-73"><a href="#cb1-73" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; e_0; </span>
-<span id="cb1-74"><a href="#cb1-74" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; ev_0; </span>
-<span id="cb1-75"><a href="#cb1-75" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; iv_0; </span>
-<span id="cb1-76"><a href="#cb1-76" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-77"><a href="#cb1-77" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed parameters</span>{</span>
-<span id="cb1-78"><a href="#cb1-78" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> y[n_days, <span class="dv">7</span>];</span>
-<span id="cb1-79"><a href="#cb1-79" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> incidence[n_days - <span class="dv">1</span>];</span>
-<span id="cb1-80"><a href="#cb1-80" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> phi = <span class="fl">1.</span> / phi_inv;</span>
-<span id="cb1-81"><a href="#cb1-81" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> theta[<span class="dv">15</span>] = {beta_h, gamma_h, sigma_h, sigma_v, rho_h, rho_v, beta_v, mu_v, upsilon_h, upsilon_v, i_0, e_0, ev_0, iv_0, N_v};</span>
-<span id="cb1-82"><a href="#cb1-82" aria-hidden="true" tabindex="-1"></a>  y = <span class="kw">integrate_ode_rk45</span>(seirsei, rep_array(<span class="fl">0.0</span>, <span class="dv">7</span>), t0, ts, theta, x_r, x_i);</span>
-<span id="cb1-83"><a href="#cb1-83" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span>:n_days<span class="dv">-1</span>){</span>
-<span id="cb1-84"><a href="#cb1-84" aria-hidden="true" tabindex="-1"></a>    incidence[i] = -(y[i+<span class="dv">1</span>, <span class="dv">2</span>] - y[i, <span class="dv">2</span>] + y[i+<span class="dv">1</span>, <span class="dv">1</span>] - y[i, <span class="dv">1</span>])*kappa + <span class="fl">1e-8</span>;</span>
-<span id="cb1-85"><a href="#cb1-85" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb1-86"><a href="#cb1-86" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-87"><a href="#cb1-87" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
-<span id="cb1-88"><a href="#cb1-88" aria-hidden="true" tabindex="-1"></a>  beta_h ~ beta(<span class="dv">10</span>, <span class="dv">1</span>);</span>
-<span id="cb1-89"><a href="#cb1-89" aria-hidden="true" tabindex="-1"></a>  gamma_h ~ lognormal(log(<span class="fl">0.15</span>), <span class="fl">0.1</span>);  </span>
-<span id="cb1-90"><a href="#cb1-90" aria-hidden="true" tabindex="-1"></a>  sigma_h ~ lognormal(log(<span class="fl">0.17</span>), <span class="fl">0.1</span>);</span>
-<span id="cb1-91"><a href="#cb1-91" aria-hidden="true" tabindex="-1"></a>  sigma_v ~ lognormal(log(<span class="fl">0.3</span>), <span class="fl">0.1</span>);</span>
-<span id="cb1-92"><a href="#cb1-92" aria-hidden="true" tabindex="-1"></a>  rho_h ~ beta(<span class="dv">10</span>, <span class="dv">100</span>);</span>
-<span id="cb1-93"><a href="#cb1-93" aria-hidden="true" tabindex="-1"></a>  rho_v ~ beta(<span class="dv">5</span>, <span class="dv">10</span>); </span>
-<span id="cb1-94"><a href="#cb1-94" aria-hidden="true" tabindex="-1"></a>  beta_v ~ beta(<span class="dv">1</span>, <span class="dv">10</span>);</span>
-<span id="cb1-95"><a href="#cb1-95" aria-hidden="true" tabindex="-1"></a>  mu_v ~ lognormal(log(<span class="fl">0.1</span>), <span class="fl">0.1</span>);</span>
-<span id="cb1-96"><a href="#cb1-96" aria-hidden="true" tabindex="-1"></a>  upsilon_h ~ lognormal(log(<span class="fl">0.25</span>), <span class="fl">0.1</span>);</span>
-<span id="cb1-97"><a href="#cb1-97" aria-hidden="true" tabindex="-1"></a>  upsilon_v ~ lognormal(log(<span class="fl">0.15</span>), <span class="fl">0.1</span>);</span>
-<span id="cb1-98"><a href="#cb1-98" aria-hidden="true" tabindex="-1"></a>  phi_inv ~ exponential(<span class="dv">2</span>);</span>
-<span id="cb1-99"><a href="#cb1-99" aria-hidden="true" tabindex="-1"></a>  kappa ~ beta(<span class="dv">15</span>, <span class="dv">100</span>);</span>
-<span id="cb1-100"><a href="#cb1-100" aria-hidden="true" tabindex="-1"></a>  i_0 ~ lognormal(<span class="dv">0</span>, <span class="fl">0.1</span>);</span>
-<span id="cb1-101"><a href="#cb1-101" aria-hidden="true" tabindex="-1"></a>  e_0 ~ lognormal(<span class="dv">0</span>, <span class="fl">0.1</span>);</span>
-<span id="cb1-102"><a href="#cb1-102" aria-hidden="true" tabindex="-1"></a>  ev_0 ~ lognormal(<span class="dv">0</span>, <span class="fl">0.1</span>);</span>
-<span id="cb1-103"><a href="#cb1-103" aria-hidden="true" tabindex="-1"></a>  iv_0 ~ lognormal(<span class="dv">0</span>, <span class="fl">0.1</span>);</span>
-<span id="cb1-104"><a href="#cb1-104" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb1-105"><a href="#cb1-105" aria-hidden="true" tabindex="-1"></a>  cases[<span class="dv">1</span>:(n_days<span class="dv">-1</span>)] ~ neg_binomial_2(incidence, phi);</span>
-<span id="cb1-106"><a href="#cb1-106" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb1-107"><a href="#cb1-107" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span> {</span>
-<span id="cb1-108"><a href="#cb1-108" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> duration = <span class="dv">1</span> / gamma_h;</span>
-<span id="cb1-109"><a href="#cb1-109" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> incub_h = <span class="dv">1</span> / sigma_h;</span>
-<span id="cb1-110"><a href="#cb1-110" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> incub_v = <span class="dv">1</span>/ sigma_v;</span>
-<span id="cb1-111"><a href="#cb1-111" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> log_lik[n_days<span class="dv">-1</span>];</span>
-<span id="cb1-112"><a href="#cb1-112" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> pred_infected[n_days<span class="dv">-1</span>];</span>
-<span id="cb1-113"><a href="#cb1-113" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb1-114"><a href="#cb1-114" aria-hidden="true" tabindex="-1"></a>  pred_infected = neg_binomial_2_rng(incidence, phi);</span>
-<span id="cb1-115"><a href="#cb1-115" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb1-116"><a href="#cb1-116" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span>:(n_days - <span class="dv">1</span>)) {</span>
-<span id="cb1-117"><a href="#cb1-117" aria-hidden="true" tabindex="-1"></a>    log_lik[i] = neg_binomial_2_lpmf(cases[i] | incidence[i], phi);</span>
-<span id="cb1-118"><a href="#cb1-118" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb1-119"><a href="#cb1-119" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="stan-code" class="level3">
+<h3 class="anchored" data-anchor-id="stan-code">Stan Code</h3>
+<div class="sourceCode" id="cb9"><pre class="sourceCode stan code-with-copy"><code class="sourceCode stan"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">functions</span> {</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>[] seirsei(<span class="dt">real</span> t, <span class="dt">real</span>[] y, <span class="dt">real</span>[] theta, </span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>             <span class="dt">real</span>[] x_r, <span class="dt">int</span>[] x_i) {</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> N_h = x_i[<span class="dv">1</span>];</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>     </span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> beta_h = theta[<span class="dv">1</span>];</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> gamma_h = theta[<span class="dv">2</span>];</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> sigma_h = theta[<span class="dv">3</span>];</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> sigma_v = theta[<span class="dv">4</span>];</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> rho_h = theta[<span class="dv">5</span>];</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> rho_v = theta[<span class="dv">6</span>];</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> beta_v = theta[<span class="dv">7</span>];</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> mu_v = theta[<span class="dv">8</span>];</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> upsilon_h = theta[<span class="dv">9</span>];</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> upsilon_v = theta[<span class="dv">10</span>];</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> i_0 = theta[<span class="dv">11</span>];</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> e_0 = theta[<span class="dv">12</span>];</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> ev_0 = theta[<span class="dv">13</span>];</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> iv_0 = theta[<span class="dv">14</span>];</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> N_v = theta[<span class="dv">15</span>];</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> init[<span class="dv">7</span>] = {N_h - i_0 - e_0, e_0, i_0, <span class="dv">0</span>, N_v - iv_0 - ev_0, ev_0, iv_0}; </span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Sh = y[<span class="dv">1</span>] + init[<span class="dv">1</span>];</span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Eh = y[<span class="dv">2</span>] + init[<span class="dv">2</span>];</span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Ih = y[<span class="dv">3</span>] + init[<span class="dv">3</span>];</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Rh = y[<span class="dv">4</span>] + init[<span class="dv">4</span>];</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Sv = y[<span class="dv">5</span>] + init[<span class="dv">5</span>];</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Ev = y[<span class="dv">6</span>] + init[<span class="dv">6</span>];</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> Iv = y[<span class="dv">7</span>] + init[<span class="dv">7</span>];</span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> lambda_h = upsilon_h * beta_h * Iv / N_v;</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> lambda_v = upsilon_v * beta_v * Ih / N_h;</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dS_dt = -lambda_h * Sh;</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dE_dt =  lambda_h * Sh - sigma_h * Eh;</span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dI_dt = sigma_h * Eh*rho_h - gamma_h * Ih;</span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dR_dt =  gamma_h * Ih;</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>      </span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dSv_dt = mu_v*N_v - lambda_v*Sv - mu_v*Sv;</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dEv_dt = lambda_v*Sv - (sigma_v + mu_v)*Ev;</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>      <span class="dt">real</span> dIv_dt =  sigma_v * Ev*rho_v - mu_v*Iv;</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>     </span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>      <span class="cf">return</span> {dS_dt, dE_dt, dI_dt, dR_dt, dSv_dt, dEv_dt, dIv_dt};</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a><span class="kw">data</span> {</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span>&lt;<span class="kw">lower</span>=<span class="dv">1</span>&gt; n_days;</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> t0;</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> ts[n_days];</span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> N_h;</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> N_v;</span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> cases[n_days];</span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed data</span> {</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> x_r[<span class="dv">0</span>];</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>  <span class="dt">int</span> x_i[<span class="dv">1</span>] = { N_h };</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a><span class="kw">parameters</span> {</span>
+<span id="cb9-60"><a href="#cb9-60" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; beta_h;</span>
+<span id="cb9-61"><a href="#cb9-61" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; gamma_h;</span>
+<span id="cb9-62"><a href="#cb9-62" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma_h;</span>
+<span id="cb9-63"><a href="#cb9-63" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; sigma_v;</span>
+<span id="cb9-64"><a href="#cb9-64" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; rho_h;</span>
+<span id="cb9-65"><a href="#cb9-65" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; rho_v;</span>
+<span id="cb9-66"><a href="#cb9-66" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; beta_v;</span>
+<span id="cb9-67"><a href="#cb9-67" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; mu_v;</span>
+<span id="cb9-68"><a href="#cb9-68" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; upsilon_h;</span>
+<span id="cb9-69"><a href="#cb9-69" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; upsilon_v;</span>
+<span id="cb9-70"><a href="#cb9-70" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; phi_inv;</span>
+<span id="cb9-71"><a href="#cb9-71" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>, <span class="kw">upper</span>=<span class="dv">1</span>&gt; kappa;</span>
+<span id="cb9-72"><a href="#cb9-72" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; i_0; </span>
+<span id="cb9-73"><a href="#cb9-73" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; e_0; </span>
+<span id="cb9-74"><a href="#cb9-74" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; ev_0; </span>
+<span id="cb9-75"><a href="#cb9-75" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span>&lt;<span class="kw">lower</span>=<span class="dv">0</span>&gt; iv_0; </span>
+<span id="cb9-76"><a href="#cb9-76" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-77"><a href="#cb9-77" aria-hidden="true" tabindex="-1"></a><span class="kw">transformed parameters</span>{</span>
+<span id="cb9-78"><a href="#cb9-78" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> y[n_days, <span class="dv">7</span>];</span>
+<span id="cb9-79"><a href="#cb9-79" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> incidence[n_days - <span class="dv">1</span>];</span>
+<span id="cb9-80"><a href="#cb9-80" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> phi = <span class="fl">1.</span> / phi_inv;</span>
+<span id="cb9-81"><a href="#cb9-81" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> theta[<span class="dv">15</span>] = {beta_h, gamma_h, sigma_h, sigma_v, rho_h, rho_v, beta_v, mu_v, upsilon_h, upsilon_v, i_0, e_0, ev_0, iv_0, N_v};</span>
+<span id="cb9-82"><a href="#cb9-82" aria-hidden="true" tabindex="-1"></a>  y = <span class="kw">integrate_ode_rk45</span>(seirsei, rep_array(<span class="fl">0.0</span>, <span class="dv">7</span>), t0, ts, theta, x_r, x_i);</span>
+<span id="cb9-83"><a href="#cb9-83" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span>:n_days<span class="dv">-1</span>){</span>
+<span id="cb9-84"><a href="#cb9-84" aria-hidden="true" tabindex="-1"></a>    incidence[i] = -(y[i+<span class="dv">1</span>, <span class="dv">2</span>] - y[i, <span class="dv">2</span>] + y[i+<span class="dv">1</span>, <span class="dv">1</span>] - y[i, <span class="dv">1</span>])*kappa + <span class="fl">1e-8</span>;</span>
+<span id="cb9-85"><a href="#cb9-85" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-86"><a href="#cb9-86" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-87"><a href="#cb9-87" aria-hidden="true" tabindex="-1"></a><span class="kw">model</span> {</span>
+<span id="cb9-88"><a href="#cb9-88" aria-hidden="true" tabindex="-1"></a>  beta_h ~ beta(<span class="dv">10</span>, <span class="dv">1</span>);</span>
+<span id="cb9-89"><a href="#cb9-89" aria-hidden="true" tabindex="-1"></a>  gamma_h ~ lognormal(log(<span class="fl">0.15</span>), <span class="fl">0.1</span>);  </span>
+<span id="cb9-90"><a href="#cb9-90" aria-hidden="true" tabindex="-1"></a>  sigma_h ~ lognormal(log(<span class="fl">0.17</span>), <span class="fl">0.1</span>);</span>
+<span id="cb9-91"><a href="#cb9-91" aria-hidden="true" tabindex="-1"></a>  sigma_v ~ lognormal(log(<span class="fl">0.3</span>), <span class="fl">0.1</span>);</span>
+<span id="cb9-92"><a href="#cb9-92" aria-hidden="true" tabindex="-1"></a>  rho_h ~ beta(<span class="dv">10</span>, <span class="dv">100</span>);</span>
+<span id="cb9-93"><a href="#cb9-93" aria-hidden="true" tabindex="-1"></a>  rho_v ~ beta(<span class="dv">5</span>, <span class="dv">10</span>); </span>
+<span id="cb9-94"><a href="#cb9-94" aria-hidden="true" tabindex="-1"></a>  beta_v ~ beta(<span class="dv">1</span>, <span class="dv">10</span>);</span>
+<span id="cb9-95"><a href="#cb9-95" aria-hidden="true" tabindex="-1"></a>  mu_v ~ lognormal(log(<span class="fl">0.1</span>), <span class="fl">0.1</span>);</span>
+<span id="cb9-96"><a href="#cb9-96" aria-hidden="true" tabindex="-1"></a>  upsilon_h ~ lognormal(log(<span class="fl">0.25</span>), <span class="fl">0.1</span>);</span>
+<span id="cb9-97"><a href="#cb9-97" aria-hidden="true" tabindex="-1"></a>  upsilon_v ~ lognormal(log(<span class="fl">0.15</span>), <span class="fl">0.1</span>);</span>
+<span id="cb9-98"><a href="#cb9-98" aria-hidden="true" tabindex="-1"></a>  phi_inv ~ exponential(<span class="dv">2</span>);</span>
+<span id="cb9-99"><a href="#cb9-99" aria-hidden="true" tabindex="-1"></a>  kappa ~ beta(<span class="dv">15</span>, <span class="dv">100</span>);</span>
+<span id="cb9-100"><a href="#cb9-100" aria-hidden="true" tabindex="-1"></a>  i_0 ~ lognormal(<span class="dv">0</span>, <span class="fl">0.1</span>);</span>
+<span id="cb9-101"><a href="#cb9-101" aria-hidden="true" tabindex="-1"></a>  e_0 ~ lognormal(<span class="dv">0</span>, <span class="fl">0.1</span>);</span>
+<span id="cb9-102"><a href="#cb9-102" aria-hidden="true" tabindex="-1"></a>  ev_0 ~ lognormal(<span class="dv">0</span>, <span class="fl">0.1</span>);</span>
+<span id="cb9-103"><a href="#cb9-103" aria-hidden="true" tabindex="-1"></a>  iv_0 ~ lognormal(<span class="dv">0</span>, <span class="fl">0.1</span>);</span>
+<span id="cb9-104"><a href="#cb9-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-105"><a href="#cb9-105" aria-hidden="true" tabindex="-1"></a>  cases[<span class="dv">1</span>:(n_days<span class="dv">-1</span>)] ~ neg_binomial_2(incidence, phi);</span>
+<span id="cb9-106"><a href="#cb9-106" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb9-107"><a href="#cb9-107" aria-hidden="true" tabindex="-1"></a><span class="kw">generated quantities</span> {</span>
+<span id="cb9-108"><a href="#cb9-108" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> duration = <span class="dv">1</span> / gamma_h;</span>
+<span id="cb9-109"><a href="#cb9-109" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> incub_h = <span class="dv">1</span> / sigma_h;</span>
+<span id="cb9-110"><a href="#cb9-110" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> incub_v = <span class="dv">1</span>/ sigma_v;</span>
+<span id="cb9-111"><a href="#cb9-111" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> log_lik[n_days<span class="dv">-1</span>];</span>
+<span id="cb9-112"><a href="#cb9-112" aria-hidden="true" tabindex="-1"></a>  <span class="dt">real</span> pred_infected[n_days<span class="dv">-1</span>];</span>
+<span id="cb9-113"><a href="#cb9-113" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-114"><a href="#cb9-114" aria-hidden="true" tabindex="-1"></a>  pred_infected = neg_binomial_2_rng(incidence, phi);</span>
+<span id="cb9-115"><a href="#cb9-115" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb9-116"><a href="#cb9-116" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span>:(n_days - <span class="dv">1</span>)) {</span>
+<span id="cb9-117"><a href="#cb9-117" aria-hidden="true" tabindex="-1"></a>    log_lik[i] = neg_binomial_2_lpmf(cases[i] | incidence[i], phi);</span>
+<span id="cb9-118"><a href="#cb9-118" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb9-119"><a href="#cb9-119" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="prior-predictive" class="level2">
+<h2 class="anchored" data-anchor-id="prior-predictive">Prior Predictive</h2>
 
 
 </section>
