@@ -51,13 +51,6 @@ rsconnect/
 # secrets
 /secrets.yaml
 
-# local
-data/
-
-# temp hide
-R/
-inst/
-
 # imported OSF data
 *.rds
 
