@@ -58,4 +58,7 @@ data/
 R/
 inst/
 
+# imported OSF data
+*.rds
+
 

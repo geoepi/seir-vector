@@ -47,20 +47,18 @@ Humphreys, Pelzel-McCluskey, Shults, Velazquez Salinas, Bertram, McGregor, Cohns
 An interactive dashboard to demonstrate the described SEIR-SEI model is available:
 [ShinyApps: https://geoepi.shinyapps.io/seir-vector/](https://geoepi.shinyapps.io/seir-vector/)  
   
-Code and data for this site and ShinyApp above are available:    
+Code for this site and ShinyApp above are available:    
 [GitHub: https://github.com/geoepi/seir-vector](https://github.com/geoepi/seir-vector)    
   
-Archived data and other supporting information are available on the Open Science Framework:  
-[Project OSF site: TBD](https://osf.io/hf8t2/)  
+Large model objects, incidence data, and other archived information are available on the Open Science Framework: [Project OSF site: https://osf.io/vqgxs/](https://osf.io/vqgxs/). The R-function *get_data_osf()* is provided to download and read these data.  
 :::
 
   
 ## Workflow Synopsis   
-This script provides an overview of the methodologies and code presented in the publication above. Note that data, code, and website configuration files, as well as code for the [VSV ShinyApp](https://geoepi.shinyapps.io/seir-vector/), are available on the project's [GitHub site](https://github.com/geoepi/seir-vector).  
-   
-For simplicity, this workflow will demonstrate analysis for outbreaks observed in 2014, however the workflow can be applied 2015 outbreaks with minimal modification.  The PAGE CONTENTS menu in the right upper corner can be used to navigate to specific sections.       
-   
-    
+This script provides an overview of the methodologies and code presented in the publication above. Note that data, code, and website configuration files, as well as code for the [VSV ShinyApp](https://geoepi.shinyapps.io/seir-vector/), are available on the project's [GitHub site](https://github.com/geoepi/seir-vector) and [OSF Project site](https://osf.io/vqgxs/).  Executed Stan model objects are approximately 200mb in size, code to download and read these objects is provided in the script.  
+  
+For simplicity, this workflow will demonstrate analysis for outbreaks observed in 2014, however the workflow can be applied to 2015 outbreaks with minimal modification.  The PAGE CONTENTS menu in the right upper corner can be used to navigate to specific sections.  
+  
 
 ## Parameters and Formula 
 
@@ -112,7 +110,7 @@ $$\begin{align}
 **in which the first two lines give the Force of Infection (FOI, $\lambda$'s) for hosts and vectors respectively** and $\rho$ parameters (range 0.00-1.00) potentially reduce the size of the exposed (**E**) populations used in calculating the number of infectious individuals (**I**).     
 
 ## Model Preliminaries  
-Before constructing a Bayesian model in Stan, we first visualize the data and construct an exploratory compartmental model using non-Bayesian Ordinary Differential Equations (ODE) and the **deSolve** Package.    
+Before constructing a Bayesian model in Stan ([Stan Installation](https://mc-stan.org/users/interfaces/)), we first visualize the data and construct an exploratory compartmental model using non-Bayesian Ordinary Differential Equations (ODE) and the **deSolve** Package.    
   
 
 ### Needed Libraries  
@@ -136,17 +134,17 @@ source_dir("./R")
 ```
 
 ### Observed Incidence  
-Read observed incidence data and create a simple plot figure. Note that 2014 and 2015 data are available in the *vsv_ind_truth.rds* object.  
+Read observed incidence data as a data frame called *truth_df* and create a simple plot figure. Note that 2014 and 2015 data are available in the *vsv_ind_truth.rds* object.  
   
-##### Contents for *vsv_ind_truth.rds*
+##### Contents for *truth_df*
 -   date: Estimated date of disease onset (symptoms) as determined by examination at time of inspection.  
 -   count: Number of individuals animals with Vesicular Stomatitis (VS)   
 -   susc: Number of individual animals located with same herd or on same premises as confirmed animal.  These values are assumed to reflect susceptible animals.  
 -   year: Year of confirmed VS onset.  
 -   doy: Integer 1-365 reflecting the day of year for the *date*.  
-```{r}
-truth_df <- readRDS(here("assets/vsv_ind_truth.rds")) |>
-  filter(year == 2014) # cahnge to 2015 to examine 2015 data
+```{r message=FALSE, warning=FALSE}
+truth_df <- get_data_osf("vs_inc_truth") |>
+  filter(year == 2014) # change to 2015 to examine 2015 data
 
 str(truth_df)
 ```
@@ -249,7 +247,7 @@ plot_ode_dynamics(out)
 #| fig-cap: "Comparison of incident infections.  Line labeled Infected indicates the number of new indiduals added to the Exposed compartment per time step, whereas the line labeled Symptomatic refers to the number of new individuals added to the infectious compartment.  The ratio of the sums for the Infected and Symptomatic curves is shown as Estimated rho in the plot. This reverse calculation demonstrates what the rho competency parameter is doing in the model. "
 #| 
 compare_ei_incidence(out, gamma_h=initial_parameters["gamma_h"])
-```
+``` 
 
 
 ## Bayesian Model  
@@ -260,7 +258,7 @@ In addition to translating the SEIR-SEI equations (@eq-seirsei) to the Stan lang
 ### Prior Model  
 Before incorporating observed data into the model, a prior model is coded and evaluated to ensure that assumptions about prior distributions are reasonable.  
   
-#### Prior model code  
+#### Prior model code 
 ```stan
 functions {
     // SEIR-SEI function
@@ -379,23 +377,22 @@ generated quantities {
   pred_infected = neg_binomial_2_rng(incidence, phi); // sample from NegBinomial
 }
 ```
-  
    
 #### NegativeBinomial Sampling   
-Note that the Stan code above includes a negative binomial distribution that samples from estimated incidence.  The SEIR-SEI ODE equations estimate prevalence but not incidence.  Therefore, the code first estimates incidence (new infections each day) using the susceptible (**S**) and exposed (**E**) compartments.  That code is shown in the transformed parameters block as,   
+Note that the Stan code above includes a negative binomial distribution that samples from estimated incidence.  The SEIR-SEI ODE equations estimate prevalence but not incidence.  Therefore, the code first estimates incidence (new infections each day) using the susceptible (**S**) and exposed (**E**) compartments. A small value (1e-8) is included to prevent incidence from being negative on the initial iteration.  The code as shown in the `transformed parameters` block is,   
 ```stan  
 for (i in 1:n_days-1){
     incidence[i] = -(y[i+1, 2] - y[i, 2] + y[i+1, 1] - y[i, 1]) + 1e-8;
   }
 ```  
   
-Later in the generated quantities block, incidence is used in sampling from the NgBinomial,
+Later in the `generated quantities` block, incidence is used in sampling from the NgBinomial,
 ```stan
 real pred_infected[n_days-1]; 
   pred_infected = neg_binomial_2_rng(incidence, phi); 
 ```  
 
-Consdering that incidence is estimated from the daily change ($\Delta text{I}_{t}$)in infections (virus exposures), and this quantity is used to sample from the NegBinomial, the notation with prior distributions couldbe shown as,
+Consdering that incidence is estimated from the daily change ($\Delta \text{I}_{t}$) in infections (virus exposures), and this quantity is used to sample from the NegBinomial, the notation with prior distributions couldbe shown as,
 
 $$\begin{align} \nonumber
     \text{Y}_{t}|\theta &\sim \text{NegBinomial}(\text{Y}|\Delta\text{I}_{t}, \phi) \\ \nonumber
@@ -411,7 +408,7 @@ $$\begin{align} \nonumber
     \gamma_h &\sim \text{Lognormal}(log(0.085), 0.1) \\ \nonumber
     \mu &\sim \text{Lognormal}(log(0.1), 0.1) \\ \nonumber
     {1}/{\phi} &\sim \text{Exponential}(2) \\ \nonumber
-\end{align}$$  
+\end{align}$${#eq-negbin}   
         
 #### Prior model setup    
 Organize data needed to run the prior model.  
@@ -482,142 +479,95 @@ prior_model <- sampling(seirsei.st,
   
 load saved model  
 ```{r}
-prior_model <- readRDS(here("assets/prior_model.rds"))
+prior_model <- get_data_osf("prior_model")
   
 class(prior_model)
 ```
 
-#### Check results
+#### Check results  
+  
+**Parameter Distributions**    
+Parameter distributions are plotted with medians as a visual check.  In addition to parameters specified in prior distributions, the Extrinsic Incubation Period (*incub_v*), Intrinsic Incubation Period (*incub_h*), and basic reproduction number (R0_h) are shown in @fig-prior_params.  The EIP and IIP are respectively calculated as the reciprocal of the estimated $\sigma_v$ and $\sigma_h$ parameters.  The reproduction number ($R_0$) is calculated as $\beta_h \cdot \upsilon_h/\gamma_h$.  
 ```{r fig.width=8, fig.height=10}
 #| label: fig-prior_params
 #| fig-cap: "Distributions from modeled priors.  Dashed lines show the median value for each parameter."
 #| 
 plot_params_posteriors(prior_model)
 ```
-
+  
+**Prior Predictive Distributions** 
+The prior model does not have information (data) about the number of observed number of VS cases, therefore predictions here (@fig-prior_traj) are based only on incidence as estimated from the SEIR-SEI ODE system and the prior distributions intended to capture mechanistic aspects of VS epidemiology.  As a prior predictive check, it's assumed that predictions will have considerable uncertainty, which is the case in @fig-prior_traj, however it is also case that the median counts across the random draws are near the truth.       
 ```{r fig.width=6, fig.height=8}
 #| label: fig-prior_traj
-#| fig-cap: "Random draws from posterior predictive distribution.  Blue lines show sampled trajectories exceeding the model estimated median values for each day, where as the height of the orange color gives the estimated daily median.  Height of red circles indicate observed daily incidence."
+#| fig-cap: "Random draws from posterior predictive distribution.  Blue lines show sampled trajectories exceeding the model estimated median values for each day, where as the height of the orange color gives the estimated daily median.  Height of black points indicate observed daily incidence."
 #| 
 plot_sample_trajectories(prior_model, truth_df=truth_df, n_draws = 100)
 ```
-
-### Full Stan Model
-```stan
-functions {
-  real[] seirsei(real t, real[] y, real[] theta, 
-             real[] x_r, int[] x_i) {
-
-      real N_h = x_i[1];
-     
-      real beta_h = theta[1];
-      real gamma_h = theta[2];
-      real sigma_h = theta[3];
-      real sigma_v = theta[4];
-      real rho_h = theta[5];
-	  real rho_v = theta[6];
-      real beta_v = theta[7];
-      real mu_v = theta[8];
-	  real upsilon_h = theta[9];
-	  real upsilon_v = theta[10];
-      real i_0 = theta[11];
-      real e_0 = theta[12];
-      real ev_0 = theta[13];
-      real iv_0 = theta[14];
-      real N_v = theta[15];
-      
-      real init[7] = {N_h - i_0 - e_0, e_0, i_0, 0, N_v - iv_0 - ev_0, ev_0, iv_0}; 
-      real Sh = y[1] + init[1];
-      real Eh = y[2] + init[2];
-      real Ih = y[3] + init[3];
-      real Rh = y[4] + init[4];
-      real Sv = y[5] + init[5];
-      real Ev = y[6] + init[6];
-      real Iv = y[7] + init[7];
-	  
-	  real lambda_h = upsilon_h * beta_h * Iv / N_v;
-      real lambda_v = upsilon_v * beta_v * Ih / N_h;
-	  
-	  real dS_dt = -lambda_h * Sh;
-      real dE_dt =  lambda_h * Sh - sigma_h * Eh;
-      real dI_dt = sigma_h * Eh*rho_h - gamma_h * Ih;
-      real dR_dt =  gamma_h * Ih;
-	  
-	  real dSv_dt = mu_v*N_v - lambda_v*Sv - mu_v*Sv;
-      real dEv_dt = lambda_v*Sv - (sigma_v + mu_v)*Ev;
-      real dIv_dt =  sigma_v * Ev*rho_v - mu_v*Iv;
-     
-      return {dS_dt, dE_dt, dI_dt, dR_dt, dSv_dt, dEv_dt, dIv_dt};
-  }
-}
-data {
-  int<lower=1> n_days;
-  real t0;
-  real ts[n_days];
-  int N_h;
-  int N_v;
-  int cases[n_days];
-}
-transformed data {
-  real x_r[0];
-  int x_i[1] = { N_h };
-}
-parameters {
-  real<lower=0, upper=1> beta_h;
-  real<lower=0> gamma_h;
-  real<lower=0> sigma_h;
-  real<lower=0> sigma_v;
-  real<lower=0, upper=1> rho_h;
-  real<lower=0, upper=1> rho_v;
-  real<lower=0, upper=1> beta_v;
-  real<lower=0> mu_v;
-  real<lower=0> upsilon_h;
-  real<lower=0> upsilon_v;
-  real<lower=0> phi_inv;
-  real<lower=0, upper=1> kappa;
-  real<lower=0> i_0; 
-  real<lower=0> e_0; 
-  real<lower=0> ev_0; 
-  real<lower=0> iv_0; 
-}
-transformed parameters{
-  real y[n_days, 7];
-  real incidence[n_days - 1];
-  real phi = 1. / phi_inv;
-  real theta[15] = {beta_h, gamma_h, sigma_h, sigma_v, rho_h, rho_v, beta_v, mu_v, upsilon_h, upsilon_v, i_0, e_0, ev_0, iv_0, N_v};
-  y = integrate_ode_rk45(seirsei, rep_array(0.0, 7), t0, ts, theta, x_r, x_i);
-  for (i in 1:n_days-1){
-    incidence[i] = -(y[i+1, 2] - y[i, 2] + y[i+1, 1] - y[i, 1])*kappa + 1e-8;
-  }
-}
-model {
-  beta_h ~ beta(10, 1);
-  gamma_h ~ lognormal(log(0.15), 0.1);  
-  sigma_h ~ lognormal(log(0.17), 0.1);
-  sigma_v ~ lognormal(log(0.3), 0.1);
-  rho_h ~ beta(10, 100);
-  rho_v ~ beta(5, 10); 
-  beta_v ~ beta(1, 10);
-  mu_v ~ lognormal(log(0.1), 0.1);
-  upsilon_h ~ lognormal(log(0.25), 0.1);
-  upsilon_v ~ lognormal(log(0.15), 0.1);
-  phi_inv ~ exponential(2);
-  kappa ~ beta(15, 100);
-  i_0 ~ lognormal(0, 0.1);
-  e_0 ~ lognormal(0, 0.1);
-  ev_0 ~ lognormal(0, 0.1);
-  iv_0 ~ lognormal(0, 0.1);
-
-  cases[1:(n_days-1)] ~ neg_binomial_2(incidence, phi);
-}
-generated quantities {
-  real duration = 1 / gamma_h;
-  real incub_h = 1 / sigma_h;
-  real incub_v = 1/ sigma_v;
-  real log_lik[n_days-1];
-  real pred_infected[n_days-1];
   
-  pred_infected = neg_binomial_2_rng(incidence, phi);
+To visualize the prior predictions differently, credible intervals can plotted along with the estimated median prediction (@fig-prior_ci).   
+```{r fig.width=8, fig.height=6}
+#| label: fig-prior_ci
+#| fig-cap: "Figure displays summary credible intervals (blue shading) and medianprediction from the prior predictive model.  Height of red points indicate observed daily incidence."
+#| 
+plot_pred_incidence(prior_model, my_truth = truth_df)  
+``` 
+
+
+
+### Full Bayesian Model  
+Although parameter values from the prior model are reasonable based on current understanding of VS epidmiology, draws from the prior predictive posterior show far too much uncertainty to have confidence in the model.  
+  
+To improve the model, the Stan code is updated to include the following elements:  
+  
+**Observed Incidence**    
+The `data` block shown in the code is modfied to take observed incidence as an input. The observed incidence is referred to as *cases* in the code.  
+```stan
+data {
+...
+int cases[n_days];
+}
+``` 
+The `model` block is revised to include the observed cases when sampling from the NegBinomial.
+```stan
+model {
+...
+cases[1:(n_days-1)] ~ neg_binomial_2(incidence, phi);
+}
+```
+   
+**Observation Bias**  
+In addition to incorporting observed incidence, the model a new model parameter is added to account for underreporting and other possible errors in the observations.  The bias parameter is designated as $\kappa$ and used to reduce incidence as estimated by the SEIR-SEI system.  
+  
+The new $\kappa$ parameter in the `transformed parameters` block,  
+```stan
+transformed parameters{
+...
+for (i in 1:n_days-1){
+    incidence[i] = -(y[i+1, 2] - y[i, 2] + y[i+1, 1] - y[i, 1])*kappa;
+  }
+
+}
+```
+  
+and the $\kappa$ prior specification is added to the `model block`. 
+```stan
+model {
+  ...
+  kappa ~ beta(15, 100);
+}
+```
+
+With the addition of $\kappa$, the previously described sampling distribution (@eq-negbin) becomes,
+$$\begin{align} \nonumber
+    \text{Y}_{t}|\theta &\sim \text{NegBinomial}(\text{Y}|\Delta\text{I}_{t}\bold{\kappa}, \phi) \\ \nonumber
+\end{align}$$  
+  
+**Pointwise Log-Likelihood**  
+Lastly, code is added to the `generated quantities` block to facilitate some checks after the model is run.
+```stan
+generated quantities{
+...
+real log_lik[n_days-1];
   
   for (i in 1:(n_days - 1)) {
     log_lik[i] = neg_binomial_2_lpmf(cases[i] | incidence[i], phi);
@@ -625,6 +575,28 @@ generated quantities {
 }
 ```
 
+The Stan code for the full Bayesian model, with the revisions decribed above can be viewed here:  
 
-## Prior Predictive
+   
+#### Full Bayesian model results
+The
+
+```{r eval=FALSE, echo=FALSE}
+fit_2014 <- readRDS(here("assets/fit_2014.rds"))
+```
+```{r fig.width=6, fig.height=8, eval=FALSE, echo=FALSE}
+#| label: fig-prior_traj2
+#| fig-cap: "Random draws from posterior predictive distribution.  Blue lines show sampled trajectories exceeding the model estimated median values for each day, where as the height of the orange color gives the estimated daily median.  Height of red circles indicate observed daily incidence."
+#| 
+plot_sample_trajectories(fit_2014, truth_df=truth_df, n_draws = 100)
+plot_pred_incidence(fit_2014, my_truth = truth_df, index_offset = 110)
+plot_pred_incidence(prior_model, my_truth = truth_df, index_offset = 110)
+```
+
+
+
+
+
+
+
    
