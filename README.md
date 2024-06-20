@@ -16,8 +16,8 @@ An interactive dashboard to demonstrate the described SEIR-SEI model is availabl
 All code and data are available for download:       
 [GitHub: https://github.com/geoepi/seir-vector](https://github.com/geoepi/seir-vector)    
   
-Additional supporting information and archived data are available on the Open Science Framework:  
-[Project OSF site: TBD](https://osf.io/hf8t2/)       
+Large model objects, incidence data, and other archived information are available on the Open Science Framework:  
+[Project OSF site: https://osf.io/vqgxs/](https://osf.io/vqgxs/)       
    
 #### <a class="github-button" href="https://github.com/geoepi/seir-vector/archive/refs/heads/main.zip" data-color-scheme="no-preference: dark; light: light; dark: dark;" data-icon="octicon-download" data-size="large" aria-label="Download buttons/github-buttons on GitHub">Download</a> all code and data 
 

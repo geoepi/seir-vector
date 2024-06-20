@@ -26,7 +26,7 @@ plot_sample_trajectories <- function(stanmodel, truth_df, variable = "pred_infec
     scale_colour_manual(values=color_palette) +
     geom_point(data = truth_df,
                aes(doy, count, group=NA),
-               col="black", shape=1, size=2) +
+               col="black", shape=1, size=2, stroke=1) +
     theme_minimal() + ylim(0, ymax) +
     theme(plot.margin = unit(c(0.5, 0.2, 0.5, 0.2), "cm"),
           legend.position = "none", 
