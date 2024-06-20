@@ -499,7 +499,7 @@ plot_params_posteriors(prior_model)
 The prior model does not have information (data) about the number of observed number of VS cases, therefore predictions here (@fig-prior_traj) are based only on incidence as estimated from the SEIR-SEI ODE system and the prior distributions intended to capture mechanistic aspects of VS epidemiology.  As a prior predictive check, it's assumed that predictions will have considerable uncertainty, which is the case in @fig-prior_traj, however it is also case that the median counts across the random draws are near the truth.       
 ```{r fig.width=6, fig.height=8}
 #| label: fig-prior_traj
-#| fig-cap: "Random draws from posterior predictive distribution.  Blue lines show sampled trajectories exceeding the model estimated median values for each day, where as the height of the orange color gives the estimated daily median.  Height of black points indicate observed daily incidence."
+#| fig-cap: "Random draws from predictive distribution.  Colored lines show sampled trajectories.  Height of black points indicate observed daily incidence."
 #| 
 plot_sample_trajectories(prior_model, truth_df=truth_df, n_draws = 100)
 ```
@@ -507,7 +507,7 @@ plot_sample_trajectories(prior_model, truth_df=truth_df, n_draws = 100)
 To visualize the prior predictions differently, credible intervals can plotted along with the estimated median prediction (@fig-prior_ci).   
 ```{r fig.width=8, fig.height=6}
 #| label: fig-prior_ci
-#| fig-cap: "Figure displays summary credible intervals (blue shading) and medianprediction from the prior predictive model.  Height of red points indicate observed daily incidence."
+#| fig-cap: "Figure displays summary credible intervals (blue shading) and median prediction from the prior predictive model.  Height of red points indicate observed daily incidence."
 #| 
 plot_pred_incidence(prior_model, my_truth = truth_df)  
 ``` 
@@ -515,7 +515,7 @@ plot_pred_incidence(prior_model, my_truth = truth_df)
 
 
 ### Full Bayesian Model  
-Although parameter values from the prior model are reasonable based on current understanding of VS epidmiology, draws from the prior predictive posterior show far too much uncertainty to have confidence in the model.  
+Although parameter values from the prior model are reasonable based on current understanding of VS epidmiology, draws from the prior predictions show far too much uncertainty to have confidence in the model.  
   
 To improve the model, the Stan code is updated to include the following elements:  
   
@@ -575,24 +575,29 @@ real log_lik[n_days-1];
 }
 ```
 
-The Stan code for the full Bayesian model, with the revisions decribed above can be viewed here:  
-
+The Stan code for the full Bayesian model, with the revisions decribed above can be viewed here: [Full SEIR-SEI Model](https://github.com/geoepi/seir-vector/blob/main/inst/stan/vsv_full_model.stan)
    
 #### Full Bayesian model results
-The
-
-```{r eval=FALSE, echo=FALSE}
-fit_2014 <- readRDS(here("assets/fit_2014.rds"))
+Download the executed model object for 2014 VS Outbreaks  
+```{r eval=TRUE, echo=TRUE}
+fit_2014 <- get_data_osf("fit_2014")
 ```
-```{r fig.width=6, fig.height=8, eval=FALSE, echo=FALSE}
-#| label: fig-prior_traj2
-#| fig-cap: "Random draws from posterior predictive distribution.  Blue lines show sampled trajectories exceeding the model estimated median values for each day, where as the height of the orange color gives the estimated daily median.  Height of red circles indicate observed daily incidence."
+
+@fig-post_traj provides posterior predictive checks for the full model for comparison to the prior model @fig-prior_traj.
+```{r fig.width=6, fig.height=8, eval=TRUE}
+#| label: fig-post_traj
+#| fig-cap: "Random draws from posterior predictive distribution.  Colored lines show sampled trajectories.  Height of red circles indicate observed daily incidence."
 #| 
-plot_sample_trajectories(fit_2014, truth_df=truth_df, n_draws = 100)
-plot_pred_incidence(fit_2014, my_truth = truth_df, index_offset = 110)
-plot_pred_incidence(prior_model, my_truth = truth_df, index_offset = 110)
+plot_sample_trajectories(fit_2014, truth_df=truth_df, n_draws = 100, ymax_prob = 1)
 ```
 
+To visualize the prior predictions differently, (@fig-post_ci) displays credible intervals with the estimated median as shown for the prior model (@fig-prior_ci).   
+```{r fig.width=8, fig.height=6}
+#| label: fig-post_ci
+#| fig-cap: "Figure displays summary credible intervals (blue shading) and median prediction from the prior predictive model.  Height of red points indicate observed daily incidence."
+#| 
+plot_pred_incidence(fit_2014, my_truth = truth_df)  
+``` 
 
 
 

@@ -4,10 +4,16 @@ project:
   
 website:
   title: "SEIR-vector Model"
+  favicon: images/logo.png
   navbar:
     left:
       - href: overview.qmd
         text: Overview
+      - href: diagnostics.qmd
+        text: Diagnostics
+    right:
+      - icon: github
+        href: https://github.com/geoepi/seir-vector
     tools:
       - icon: github
         href: https://github.com/geoepi/seir-vector

@@ -1,0 +1,119 @@
+---
+title: "Diagnostics"
+bibliography: references.bib
+format:
+  html: 
+    df-print: kable
+    code-fold: show
+    code-summary: "Hide code"
+    code-overflow: wrap
+    toc-title: Page Contents
+    toc: true
+    toc-depth: 3
+    toc-location: right
+    number-sections: false
+    html-math-method: katex
+    smooth-scroll: true
+editor: source
+editor_options: 
+  chunk_output_type: console
+---
+```{=html}
+<style type="text/css">
+
+body, td {
+   font-size: 13pt;
+}
+code.r{
+  font-size: 9pt;
+}
+pre {
+  font-size: 11pt
+}
+</style>
+```
+
+::: {.callout-important icon=false}
+#### Draft Supporting Information (*in review*) 
+This site provides a demonstrative workflow and supporting information for the publication:  
+**Mechanistic Insights into the 2014-2015 Vesicular Stomatitis Outbreak in the United States: A SEIR-SEI Compartmental Model Analysis**  
+  
+Authors:  
+Humphreys, Pelzel-McCluskey, Shults, Velazquez Salinas, Bertram, McGregor, Cohnstaedt, Swanson, Scroggs, Peters, and Rodriguez 
+:::  
+  
+::: {.callout-tip icon=false} 
+#### External Resources
+An interactive dashboard to demonstrate the described SEIR-SEI model is available:
+[ShinyApps: https://geoepi.shinyapps.io/seir-vector/](https://geoepi.shinyapps.io/seir-vector/)  
+  
+Code for this site and ShinyApp above are available:    
+[GitHub: https://github.com/geoepi/seir-vector](https://github.com/geoepi/seir-vector)    
+  
+Large model objects, incidence data, and other archived information are available on the Open Science Framework: [Project OSF site: https://osf.io/vqgxs/](https://osf.io/vqgxs/). The R-function *get_data_osf()* is provided to download and read these data.  
+:::
+
+
+```{r include=FALSE, warning=FALSE, message=FALSE}
+library(bayesplot) # diagnostics and plotting
+library(ggplot2)   # plots
+library(rstan)     # interface to Stan from R
+library(here)      # directory management
+
+# custom functions (mostly plots)  
+source(here("./R/utilities.R"))
+source_dir("./R")
+```
+
+## Synopsis  
+This page demonstrates several diagnostic checks of the models presented in the paper.  Please see the Overview tab on this website to view a brief model tutorial.  
+   
+### Load Full Models  
+Executed model objects are approximately 200mb in size and are archived at the project's Open Science Framework site [HERE](https://osf.io/vqgxs/).   
+```{r warning=FALSE, message=FALSE}
+fit_2014 <- get_data_osf("fit_2014")
+fit_2015 <- get_data_osf("fit_2015")
+```
+
+### Check Divergences and Acceptance Rates  
+No issues or concerns here. Acceptance rate is a little high (above 0.8), but tree depth is good (well below 10), and there are no model divergences.  
+```{r warning=FALSE, message=FALSE}
+# extract sampler metrics
+sampler_merics_2014 <- get_sampler_params(fit_2014, inc_warmup = FALSE)
+sampler_merics_2015 <- get_sampler_params(fit_2015, inc_warmup = FALSE)
+
+# 2014 divergences, treedepth, and acceptance rate by chain
+sapply(sampler_merics_2014, function(x) mean(x[, "divergent__"]))
+sapply(sampler_merics_2014, function(x) mean(x[, "treedepth__"]))
+sapply(sampler_merics_2014, function(x) mean(x[, "accept_stat__"]))
+
+# 2015 divergences, treedepth, and acceptance rate by chain
+sapply(sampler_merics_2015, function(x) mean(x[, "divergent__"]))
+sapply(sampler_merics_2015, function(x) mean(x[, "treedepth__"]))
+sapply(sampler_merics_2015, function(x) mean(x[, "accept_stat__"]))
+```
+
+### $\hat{R}$ Statistic    
+All $\hat{R}$ values are approximately 1.0. One approach to checking if a chain has converged to the equilibrium distribution is by comparing its behavior with other chains that were initialized randomly. The ($\hat{R}$) statistic calculates the ratio of the average variance of samples within each chain to the variance of pooled samples across all chains. At equilibrium, these variances should be equal, making $\hat{R}$ equal to one. If the chains have not yet converged to a common distribution, $\hat{R}$ will be greater than one. 
+```{r warning=FALSE, message=FALSE}
+rhats14 <- rhat(fit_2014)
+mcmc_rhat(rhats14) + 
+  ggtitle("Rhats for fit_2014")
+
+rhats15 <- rhat(fit_2015)
+mcmc_rhat(rhats15) + 
+  ggtitle("Rhats for fit_2015")
+```
+
+### Effective Sample Size  
+All ESS values are over 0.5.  The effective sample size (ESS) estimates the number of independent samples from the posterior distribution. In Stan, the ESS reflects how well the samples can estimate the true mean of a parameter. Due to autocorrelation in a Markov chain, the ESS is usually smaller than the total number of samples (N). If the ESS were less than 0.1, there mighthbe an issue.
+```{r warning=FALSE, message=FALSE}
+ratios_cp_14 <- neff_ratio(fit_2014)
+mcmc_neff(ratios_cp_14, size = 2) + 
+  ggtitle("ESS for fit_2014")
+
+ratios_cp_15 <- neff_ratio(fit_2015)
+mcmc_neff(ratios_cp_15, size = 2) + 
+  ggtitle("ESS for fit_2015")
+```
+
