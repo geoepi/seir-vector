@@ -598,8 +598,12 @@ To visualize the prior predictions differently, (@fig-post_ci) displays credible
 #| 
 plot_pred_incidence(fit_2014, my_truth = truth_df)  
 ``` 
-
-
+   
+     
+::: {.callout-tip icon=false} 
+#### Diagnostics  
+Please see the [Diagnostics tab](https://geoepi.github.io/seir-vector/diagnostics.html) on this website for additional model checks.
+:::
 
 
 

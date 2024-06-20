@@ -66,7 +66,7 @@ source_dir("./R")
 ```
 
 ## Synopsis  
-This page demonstrates several diagnostic checks of the models presented in the paper.  Please see the Overview tab on this website to view a brief model tutorial.  
+This page demonstrates several diagnostic checks of the models presented in the paper.  Please see the [Overview tab](https://geoepi.github.io/seir-vector/overview.html) on this website to view a brief model tutorial.  
    
 ### Load Full Models  
 Executed model objects are approximately 200mb in size and are archived at the project's Open Science Framework site [HERE](https://osf.io/vqgxs/).   
@@ -116,4 +116,9 @@ ratios_cp_15 <- neff_ratio(fit_2015)
 mcmc_neff(ratios_cp_15, size = 2) + 
   ggtitle("ESS for fit_2015")
 ```
-
+   
+      
+::: {.callout-tip icon=false} 
+#### Model Overview  
+Please see the [Overview tab](https://geoepi.github.io/seir-vector/overview.html) to view a model construction tutorial.
+:::
