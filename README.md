@@ -1,11 +1,11 @@
 # seir-vector
 
-#### Supporting Information (*in review*) 
+#### Draft Supporting Information (*in review*) 
 This site provides a demonstrative workflow and supporting information for the publication:  
-**Mechanistic Insights into the 2014-2015 Vesicular Stomatitis Outbreak in the United States: A SEIR-SEI Compartmental Model Analysis**  
-  
+**Modeling the 2014-2015 Vesicular Stomatitis Outbreak in the United States using an SEIR-SEI Approach**    
+       
 Authors:  
-Humphreys, Pelzel-McCluskey, Shults, Velazquez Salinas, Bertram, McGregor, Cohnstaedt, Swanson, Scroggs, Peters, and Rodriguez         
+Humphreys, Pelzel-McCluskey, Shults, Velazquez Salinas, Bertram, McGregor, Cohnstaedt, Swanson, Scroggs, Fautt, Mooney, Peters, and Rodriguez           
   
 A webpage based version of the code and results are available at the following link:  
 [Website: https://geoepi.github.io/seir-vector/overview](https://geoepi.github.io/seir-vector/overview)    
