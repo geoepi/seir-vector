@@ -1,4 +1,4 @@
-# seir-vector
+# seir-vector [![Website geoepi.github.io/seir-vector/overview](https://img.shields.io/website-up-down-green-red/https/naereen.github.io.svg)](https://geoepi.github.io/seir-vector/overview)
 
 #### Draft Supporting Information (*in review*) 
 This site provides a demonstrative workflow and supporting information for the publication:  
