@@ -33,13 +33,15 @@ pre {
 </style>
 ```
 
-::: {.callout-important icon=false}
-#### Draft Supporting Information (*in review*) 
+::: {.callout-note icon=false}
+#### Supporting Information   
 This site provides a demonstrative workflow and supporting information for the publication:  
 **Modeling the 2014-2015 Vesicular Stomatitis Outbreak in the United States using an SEIR-SEI Approach**  
   
 Authors:  
-Humphreys, Pelzel-McCluskey, Shults, Velazquez Salinas, Bertram, McGregor, Cohnstaedt, Swanson, Scroggs, Fautt, Mooney, Peters, and Rodriguez 
+Humphreys, Pelzel-McCluskey, Shults, Velazquez Salinas, Bertram, McGregor, Cohnstaedt, Swanson, Scroggs, Fautt, Mooney, Peters, and Rodriguez  
+  
+**Viruses** 2024, 16, 1315. [https://doi.org/10.3390/v16081315](https://doi.org/10.3390/v16081315)  
 :::
     
 ::: {.callout-tip icon=false} 
