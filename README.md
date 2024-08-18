@@ -1,12 +1,16 @@
 # seir-vector [![Website geoepi.github.io/seir-vector/overview](https://img.shields.io/website-up-down-green-red/https/naereen.github.io.svg)](https://geoepi.github.io/seir-vector/overview)
 
-#### Draft Supporting Information (*in review*) 
+### Supporting Information  
 This site provides a demonstrative workflow and supporting information for the publication:  
 **Modeling the 2014-2015 Vesicular Stomatitis Outbreak in the United States using an SEIR-SEI Approach**    
        
 Authors:  
-Humphreys, Pelzel-McCluskey, Shults, Velazquez Salinas, Bertram, McGregor, Cohnstaedt, Swanson, Scroggs, Fautt, Mooney, Peters, and Rodriguez           
+Humphreys, Pelzel-McCluskey, Shults, Velazquez Salinas, Bertram, McGregor, Cohnstaedt, Swanson, Scroggs, Fautt, Mooney, Peters, and Rodriguez  
   
+**Viruses** 2024, 16, 1315. [https://doi.org/10.3390/v16081315](https://doi.org/10.3390/v16081315)  
+   
+ 
+### Additional Resources   
 A webpage based version of the code and results are available at the following link:  
 [Website: https://geoepi.github.io/seir-vector/overview](https://geoepi.github.io/seir-vector/overview)    
    
