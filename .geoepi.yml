@@ -1,0 +1,26 @@
+schema_version: 1
+
+project_id: vsv-risk
+subproject_id: seir-vector
+
+title: Modeling the 2014-2015 Vesicular Stomatitis Outbreak in the United States using an SEIR-SEI Approach
+summary: >
+  SEIR-SEI model for VSV transmission, calibrated to 2014-15 outbreaks cycle.
+
+lead:
+  name: John Humphreys
+  github: JMHumphreys
+
+status: complete
+current_focus: Results published.
+
+repository:
+  canonical: geoepi/seir-vector
+  upstream: null
+
+compute:
+  - local
+
+next_milestone:
+  description: Complete
+  target: 2024-08-24
